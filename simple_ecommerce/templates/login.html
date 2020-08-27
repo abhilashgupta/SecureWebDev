@@ -1,5 +1,6 @@
 {% block content %}
-     <div class="activated">
+
+     <div class="login">
 
          {% if messages %}
             <ul>
@@ -9,9 +10,13 @@
             </ul>
         {% endif %}
 
-        <h1>Your account {{ username }} has been activated</h1>
+        <h2>Login to thin-air</h2>
 
-        <p>Please go to <a href="../../login">login page</a> to login to the website.</p>
+         <form method="post" >
+             {% csrf_token %}
+             {{ form.as_p }}
+            <button type="submit">Login</button>
+         </form>
      </div>
 
 {% endblock %}

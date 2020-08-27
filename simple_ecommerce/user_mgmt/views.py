@@ -6,10 +6,13 @@ import datetime
 from django import forms
 from django.http import HttpResponse
 
+def index(request):
+    return render(request, 'index.html')
+
 def registration(request):
     if request.method == 'POST':
         f = RegistrationForm(request.POST)
-        print(f)
+        # print(f)
         if f.is_valid():
             username = f.cleaned_data.get('username')
             if User.objects.filter(username__iexact=username).exists():
@@ -29,11 +32,11 @@ def registration(request):
         elif f.errors:
             for v in f.errors.values():
                 messages.error(request, v)
-            print(f)
+            # print(f.errors)
             return render(request, 'registration.html', {'form': f})
         else:
             messages.error(request, 'Account creation failed')
-            print(f)
+            # print(f)
             return render(request, 'registration.html', {'form': f})
 
     else:
@@ -44,7 +47,7 @@ def activation(request, username, token_slug):
     if User.objects.filter(username__iexact=username).exists():
         user = User.objects.get(username=username)
         if user.useractivationinfo.enabled :
-            response = '{}\'s user account is already activated. Please login at <a href="login.html">login page</a>'
+            response = '{}\'s user account is already activated. Please login at <a href="../../login">login page</a>'
             return HttpResponse(response.format(username))
         elif user.useractivationinfo.activation_token != token_slug :
             response = "User account {}'s activation token doesn't match with {}.<br>\

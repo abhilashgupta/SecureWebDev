@@ -1,5 +1,5 @@
 from django.urls import path
-
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
@@ -7,5 +7,7 @@ urlpatterns = [
     # path('index/', views.index, name='index'),
     path('accounts/registration', views.registration, name='registration'),
     path('accounts/<username>/verify/<slug:token_slug>', views.activation, name='activation'),
-    # path('accounts/login', views.login, name='login'),
+    path('accounts/login', auth_views.LoginView.as_view(template_name="login.html"), name='login'),
+    path('accounts/logout', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
+    path('index', views.index, name='index'),
 ]
