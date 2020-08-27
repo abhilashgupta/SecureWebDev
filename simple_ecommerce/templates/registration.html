@@ -1,0 +1,33 @@
+{% block content %}
+{# Modified for use from https://overiq.com/django-1-10/django-creating-users-using-usercreationform/ #}
+     <div class="register">
+
+         {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <h1>{{ message }}</h1>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        <h1>Create a new user account</h1>
+
+         <form method="post" >
+             {% csrf_token %}
+             
+             {% for field in form %}
+                <div class="fieldWrapper">
+                    {{ field.label_tag }} {{ field }}
+                    {% if field.help_text %}
+                    <p class="help">{{ field.help_text }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <tr>
+                <td></td>
+                <td><input type="submit" name="submit" value="Register" /></td>
+            </tr>
+         </form>
+     </div>
+
+{% endblock %}
