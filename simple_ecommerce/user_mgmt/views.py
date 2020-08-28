@@ -1,10 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from .forms import RegistrationForm
 from django.contrib import messages
 from django.contrib.auth.models import User
 import datetime
 from django import forms
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 
 def index(request):
     return render(request, 'index.html')
@@ -47,12 +47,11 @@ def activation(request, username, token_slug):
     if User.objects.filter(username__iexact=username).exists():
         user = User.objects.get(username=username)
         if user.useractivationinfo.enabled :
-            response = '{}\'s user account is already activated. Please login at <a href="../../login">login page</a>'
-            return HttpResponse(response.format(username))
+            return render(request, 'index.html')
+            # response = '{}\'s user account is already activated. Please login at <a href="../../login">login page</a>'
+            # return HttpResponse(response.format(username))
         elif user.useractivationinfo.activation_token != token_slug :
-            response = "User account {}'s activation token doesn't match with {}.<br>\
-                        Please inform correct token"
-            return HttpResponse(response.format(username, token_slug) )
+            raise Http404("This is not the page that you are looking for!")
         else :
             user.useractivationinfo.enabled = True
             user.useractivationinfo.save()
@@ -60,6 +59,8 @@ def activation(request, username, token_slug):
             user.save()
             return render(request, 'activated.html', {'username': username})
     else:
-        response = "User account {} doesn't exist. Please register first at \
-                    <a href='../../registration'>registration page</a>."
-        return HttpResponse(response.format(username))
+        raise Http404("This is not the page that you are looking for!")
+
+# def password_reset(request, username):
+#     if User.objects.filter(username__iexact=username).exists():
+#         user = User.objects.get(username=username)
