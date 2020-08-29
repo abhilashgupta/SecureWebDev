@@ -14,7 +14,6 @@ def index(request):
 def registration(request):
     if request.method == 'POST':
         f = RegistrationForm(request.POST)
-        # print(f)
         if f.is_valid():
             username = f.cleaned_data.get('username')
             if User.objects.filter(username__iexact=username).exists():
@@ -34,11 +33,9 @@ def registration(request):
         elif f.errors:
             for v in f.errors.values():
                 messages.error(request, v)
-            # print(f.errors)
             return render(request, 'registration.html', {'form': f})
         else:
             messages.error(request, 'Account creation failed')
-            # print(f)
             return render(request, 'registration.html', {'form': f})
 
     else:
@@ -75,7 +72,6 @@ The thin-air team"
 def password_reset_request(request):
     if request.method == 'POST':
         f = PasswordResetForm(request.POST)
-        # print(f)
         if f.is_valid():
             username = f.cleaned_data.get('email')
             if User.objects.filter(username__iexact=username).exists():
@@ -109,27 +105,19 @@ def new_password_authentication(request, username, token_slug):
         return render(request, 'new_password_authentication.html', {'form': f, 'username':username})
     else :
         now = datetime.datetime.now(datetime.timezone.utc)
-        # print (now)
-        # print (user.useractivationinfo.reset_time)
         if now < user.useractivationinfo.reset_time:
             user.useractivationinfo.reset_time = datetime.datetime.now()
             user.useractivationinfo.save()
         return HttpResponse(request, 'Invalid Token.')
 
 def new_password_confirmation(request, username):
-    print ('new_password_confirmation called.')
     if request.method == 'POST':
         user = get_object_or_404(User, username=username)
         f = SetPasswordForm(user, request.POST)
-        print ("f=\n", f )
         if f.errors:
-            print ("case errors")
             for v in f.errors.values():
                 messages.error(request, v)
         else:
-            print("f.is_valid=", f.is_valid())
-            print("f.errors:", f.errors)
-            
             if datetime.datetime.now(datetime.timezone.utc) < user.useractivationinfo.reset_time: 
                 password = f.clean_new_password2()
                 user.set_password(password)
@@ -142,6 +130,5 @@ def new_password_confirmation(request, username):
                 messages.error(request, "Invalid Attempt.")
                 return render(request, 'post_password_change_attempt.html')
     else:
-        print ("abcd")
         messages.error(request, "Invalid Attempt.")
         return render(request, 'post_password_change_attempt.html')
