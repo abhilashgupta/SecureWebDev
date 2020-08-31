@@ -1,13 +1,23 @@
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from . import views
+from environs import Env
 
+env = Env()
+# Read .env into os.environ
+env.read_env()
+gO2ClientId = env("GoogleOAuth2ClientID")
+
+extra_context = {'ClientId' : gO2ClientId}
 urlpatterns = [
     # path('', views.index, name='index'),
     # path('index/', views.index, name='index'),
     path('accounts/registration', views.registration, name='registration'),
     path('accounts/<username>/verify/<slug:token_slug>', views.activation, name='activation'),
-    path('accounts/login', auth_views.LoginView.as_view(template_name="login.html"), name='login'),
+    path('accounts/google_login', views.google_login, name='google_login'),
+    path('accounts/login', auth_views.LoginView.as_view(template_name="login.html", 
+                                extra_context=extra_context), name='login'),
+    
     path('accounts/logout', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
     path('index', views.index, name='index'),
     path('accounts/password-reset', views.password_reset_request, name='password_reset_request'),

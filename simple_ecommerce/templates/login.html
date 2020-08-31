@@ -1,8 +1,11 @@
 {% block content %}
 
-     <div class="login">
+    <meta name="google-signin-client_id" content={{ ClientId }}>
 
-         {% if messages %}
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+    <div class="login">
+        {% if messages %}
             <ul>
                 {% for message in messages %}
                 <h1>{{ message }}</h1>
@@ -11,14 +14,68 @@
         {% endif %}
 
         <h2>Login to thin-air</h2>
-
-         <form method="post" >
-             {% csrf_token %}
-             {{ form.as_p }}
+        <form method="post" >
+            {% csrf_token %}
+            {{ form }}
             <button type="submit">Login</button>
-         </form>
-         <br> <br>
-         <p><a href="password-reset">Forgot Password</a></p>
-     </div>
+        </form>
+        <br> <br>
+        <p><a href="password-reset">Forgot Password</a></p>
+        <div class="g-signin2" data-onsuccess="onSignIn"></div>
+    </div>
+    
+    <script type="text/javascript">
+        function onSignIn(googleUser) {
+            var data = {
+                'token' : googleUser.getAuthResponse().id_token,
+            }
+            console.log(data)
+            const csrftoken = getCookie('csrftoken');
+            fetch('./google_login',{
+                method:'post',
+                headers:{
+                    'Content-Type':'application/json',
+                    "X-CSRFToken": csrftoken,
+                },
+                body: JSON.stringify(data),
+            }).then(response=>{
+                console.log("bad")
+                console.log(response)
+                if (response.status == 200){
+                    window.location.href = '../index'
+                }
+                else{
+                    window.location.href = 'registration'
+                }
+                // if (response.status = 500){
+                //     window.location.href = 'registration'
+                // }
+                // window.location.href=
+            })
+        }
+        //update! credentials: 'same-origin', doesn't seem to work even when there are no headers, 
+        //returns 403, missing CSRF token
+        //this idea was tried from https://stackoverflow.com/a/43606459
+
+        // This function has been copied from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+        // because fetch needs the csrf token and there seems to be no other way of extracting this
+        // when it also contains a header. 
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    
 
 {% endblock %}

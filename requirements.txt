@@ -1,1 +1,3 @@
 environs
+requests
+google-auth

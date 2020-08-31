@@ -2,11 +2,17 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import RegistrationForm
 from django.contrib import messages
 from django.contrib.auth.models import User
-import datetime, secrets
+import datetime, secrets, json, time
 from django import forms
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse, Http404, HttpResponseServerError, HttpResponseBadRequest
+from django.contrib.auth import login
 from django.core.mail import send_mail
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from environs import Env
+
+# TODO: add comments
 
 def index(request):
     return render(request, 'index.html')
@@ -132,3 +138,63 @@ def new_password_confirmation(request, username):
     else:
         messages.error(request, "Invalid Attempt.")
         return render(request, 'post_password_change_attempt.html')
+
+def google_login(request):
+    if request.method == 'POST':
+        # This below part until "except KeyError" is copied from https://stackoverflow.com/a/3244765
+        # I doubt there is any other simple way to do it though.
+        json_data = json.loads(request.body)
+        print (json_data)
+        try:
+            token = json_data['token']
+        except KeyError:
+            return HttpResponseServerError("Malformed data!")
+        env = Env()
+        # Read .env into os.environ
+        env.read_env()
+        CLIENT_ID = env("GoogleOAuth2ClientID")
+
+        try:
+            # Raises ValueError when token can't be verified
+            idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
+            # print(idinfo['exp'])
+        except ValueError:
+            return HttpResponseServerError("Invalid token!")
+        username = idinfo.get('email')
+        # print("abcd")
+        correct_iss = idinfo['iss'] in ['accounts.google.com', 'https://accounts.google.com']
+        non_expired_token = time.time() <= idinfo['exp']
+        correct_aud = CLIENT_ID == idinfo['aud']
+        username_verified = idinfo.get('email_verified') #Do we need this? Ask tutors
+        if username and correct_iss and non_expired_token and correct_aud:
+            if User.objects.filter(username__iexact=username).exists():
+                # we have a user who already has an account with this email
+                user = User.objects.get(username=username)
+                login(request, user)
+                print("123")
+                return render(request, 'index.html', {'user' : user})
+            else:
+                # we have a new user who is directly authenticating against SSO
+                # using a random string as their password population since they
+                # won't be using this and also can't register their email to create
+                # a non SSO account at thin-air
+                password = secrets.token_urlsafe(32)
+                last_name = idinfo['family_name']
+                first_name = idinfo['given_name']
+                new_user = User.objects.create(username=username,
+                        last_name=last_name, first_name=first_name)
+                new_user.set_password(password)
+                new_user.date_joined = datetime.datetime.now()
+                new_user.save()
+                new_user.useractivationinfo.enabled = True
+                new_user.useractivationinfo.save()
+                login(request, new_user)
+                # print("dfw")
+                return render(request, 'index.html', {'user' : new_user})
+        else:
+            # print("kcd")
+            return HttpResponseBadRequest("Invalid token")
+    else:
+        # print("else")
+        # return HttpResponseBadRequest("Invalid method")
+        raise Http404("This is not the page that you are looking for!")
