@@ -43,7 +43,6 @@ def registration(request):
         else:
             messages.error(request, 'Account creation failed')
             return render(request, 'registration.html', {'form': f})
-
     else:
         f = RegistrationForm()
     return render(request, 'registration.html', {'form': f})
@@ -141,43 +140,41 @@ def new_password_confirmation(request, username):
 
 def google_login(request):
     if request.method == 'POST':
-        # This below part until "except KeyError" is copied from https://stackoverflow.com/a/3244765
+        # This below part until try-except block is copied from https://stackoverflow.com/a/3244765
         # I doubt there is any other simple way to do it though.
         json_data = json.loads(request.body)
-        print (json_data)
         try:
             token = json_data['token']
         except KeyError:
-            return HttpResponseServerError("Malformed data!")
+            return HttpResponseBadRequest("Malformed data!")
+
+        # example.env contains details needed for this. Not pushing my own client id.
+        # If that is needed, let me know and I will supply it for evaluation.
         env = Env()
-        # Read .env into os.environ
         env.read_env()
         CLIENT_ID = env("GoogleOAuth2ClientID")
 
         try:
             # Raises ValueError when token can't be verified
             idinfo = id_token.verify_oauth2_token(token, requests.Request(), CLIENT_ID)
-            # print(idinfo['exp'])
         except ValueError:
-            return HttpResponseServerError("Invalid token!")
+            return HttpResponseBadRequest("Invalid token!")
+
         username = idinfo.get('email')
-        # print("abcd")
-        correct_iss = idinfo['iss'] in ['accounts.google.com', 'https://accounts.google.com']
         non_expired_token = time.time() <= idinfo['exp']
-        correct_aud = CLIENT_ID == idinfo['aud']
-        username_verified = idinfo.get('email_verified') #Do we need this? Ask tutors
-        if username and correct_iss and non_expired_token and correct_aud:
+        username_verified = idinfo.get('email_verified')
+
+        if username and username_verified and non_expired_token:
             if User.objects.filter(username__iexact=username).exists():
                 # we have a user who already has an account with this email
                 user = User.objects.get(username=username)
                 login(request, user)
-                print("123")
                 return render(request, 'index.html', {'user' : user})
             else:
                 # we have a new user who is directly authenticating against SSO
                 # using a random string as their password population since they
-                # won't be using this and also can't register their email to create
-                # a non SSO account at thin-air
+                # won't be using this and also won't be needing to regenerate a
+                # password until the user revokes permission at google for thin-air.
                 password = secrets.token_urlsafe(32)
                 last_name = idinfo['family_name']
                 first_name = idinfo['given_name']
@@ -189,12 +186,8 @@ def google_login(request):
                 new_user.useractivationinfo.enabled = True
                 new_user.useractivationinfo.save()
                 login(request, new_user)
-                # print("dfw")
                 return render(request, 'index.html', {'user' : new_user})
         else:
-            # print("kcd")
             return HttpResponseBadRequest("Invalid token")
     else:
-        # print("else")
-        # return HttpResponseBadRequest("Invalid method")
         raise Http404("This is not the page that you are looking for!")

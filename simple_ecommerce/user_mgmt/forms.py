@@ -2,8 +2,6 @@ from django.forms import ModelForm
 from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, PasswordResetForm, SetPasswordForm 
-# from registration.forms import RegistrationFormUniqueEmai
-# , RegistrationFormUniqueEmail
 from django import forms
 
 class RegistrationForm(UserCreationForm):
@@ -15,3 +13,5 @@ class RegistrationForm(UserCreationForm):
     class Meta:
         model = User
         fields = ["first_name", "last_name", "username", "password1", "password2"]
+
+# Used Django's default PasswordResetForm, SetPasswordForm to gather input in views.py

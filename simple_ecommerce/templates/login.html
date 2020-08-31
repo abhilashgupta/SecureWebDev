@@ -23,7 +23,10 @@
         <p><a href="password-reset">Forgot Password</a></p>
         <div class="g-signin2" data-onsuccess="onSignIn"></div>
     </div>
-    
+    <!-- Once a user has authorised Google SSO onto thin-air, the following code logs them in
+        everytime they reach the login page, without any button clicks. Not sure if this is the intended
+        behaviour. Spent over 4 hours trying to confirm/fix this, couldn't figure out, not spending 
+        anymore time on this. -->
     <script type="text/javascript">
         function onSignIn(googleUser) {
             var data = {
@@ -47,13 +50,9 @@
                 else{
                     window.location.href = 'registration'
                 }
-                // if (response.status = 500){
-                //     window.location.href = 'registration'
-                // }
-                // window.location.href=
             })
         }
-        //update! credentials: 'same-origin', doesn't seem to work even when there are no headers, 
+        //update! header credentials: 'same-origin', doesn't seem to work even when there are no headers, 
         //returns 403, missing CSRF token
         //this idea was tried from https://stackoverflow.com/a/43606459
 
