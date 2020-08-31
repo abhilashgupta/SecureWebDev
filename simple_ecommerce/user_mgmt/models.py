@@ -7,7 +7,8 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 from django.db.models.signals import post_save
-import secrets
+import secrets, uuid
+from django.core.validators import MinValueValidator
 
 # No changes made to the existing User model (with unique and compulsory username
 # but non required email). There I will just enforce username to be email.ß
@@ -34,3 +35,21 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.useractivationinfo.save()
+
+class Partner(models.Model):
+    pkey = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    website = models.URLField()
+    token = models.CharField(max_length=100)
+
+
+class Product(models.Model):
+    pkey = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    slug = models.SlugField(max_length=100)
+    price = models.DecimalField(max_digits=11, decimal_places=2)
+    special_price = models.DecimalField(max_digits=11, decimal_places=2)
+    count = models.IntegerField(validators=(MinValueValidator(0, "Value of count can't be less than 0.")))
+    image = models.URLField()
+    seller = models.CharField(max_length=100)
