@@ -47,9 +47,10 @@ class Product(models.Model):
     pkey = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField()
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(max_length=100) #use this in the urls.
     price = models.DecimalField(max_digits=11, decimal_places=2)
     special_price = models.DecimalField(max_digits=11, decimal_places=2)
-    count = models.IntegerField(validators=(MinValueValidator(0, "Value of count can't be less than 0.")))
+    abc = models.IntegerField()
+    count = models.IntegerField(validators=[MinValueValidator(0, "Value of count can't be less than 0.")])
     image = models.URLField()
     seller = models.CharField(max_length=100)

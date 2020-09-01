@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import RegistrationForm
 from django.contrib import messages
-from django.contrib.auth.models import User
-import datetime, secrets, json, time
+from django.contrib.auth.models import User #, Partner, Product
+import datetime, secrets, json, time, random, uuid, string
 from django import forms
 from django.http import HttpResponse, Http404, HttpResponseServerError, HttpResponseBadRequest
 from django.contrib.auth import login
@@ -12,7 +12,6 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from environs import Env
 
-# TODO: add comments
 
 def index(request):
     return render(request, 'index.html')
@@ -191,3 +190,25 @@ def google_login(request):
             return HttpResponseBadRequest("Invalid token")
     else:
         raise Http404("This is not the page that you are looking for!")
+
+# First I need a couple of dummy routines to populate the databases.
+
+# def add_partner():
+#     uid = uuid.uuid4()
+#     name_list = random.choices(string.ascii_lowercase, k=5)
+#     name = ''.join(name_list)
+#     url = "http://"+ name +".com"
+#     token = secrets.token_urlsafe(16)
+#     #how to store the token correctly?
+#     Partner.object.create(pkey=uid, name=name, website=url)
+#     Partner.
+# def get_or_delete_products(request, p_id):
+#     if request.method == 'GET':
+#         # return product details if authorised
+#         pass
+#         token = request.method
+#     elif request.method == 'DELETE':
+#         # return product details if authorised
+#         pass
+#     else:
+#         return HttpResponseBadRequest("Bad Request")

@@ -23,11 +23,18 @@
         <p><a href="password-reset">Forgot Password</a></p>
         <div class="g-signin2" data-onsuccess="onSignIn"></div>
     </div>
-    <!-- Once a user has authorised Google SSO onto thin-air, the following code logs them in
-        everytime they reach the login page, without any button clicks. Not sure if this is the intended
-        behaviour. Spent over 4 hours trying to confirm/fix this, couldn't figure out, not spending 
-        anymore time on this. -->
+    
     <script type="text/javascript">
+        function signOut() {      
+            var auth2 = gapi.auth2.getAuthInstance();      
+            auth2.signOut().then(function () {        
+                console.log('User signed out.');     
+                });      /* Turn off auto sign-in for future visits */      
+                if (navigator.credentials && navigator.credentials.preventSilentAccess) 
+                    {        
+                        navigator.credentials.preventSilentAccess();      
+                    }
+        }
         function onSignIn(googleUser) {
             var data = {
                 'token' : googleUser.getAuthResponse().id_token,
@@ -44,6 +51,7 @@
             }).then(response=>{
                 console.log("bad")
                 console.log(response)
+                signOut()
                 if (response.status == 200){
                     window.location.href = '../index'
                 }
