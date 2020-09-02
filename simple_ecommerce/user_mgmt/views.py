@@ -372,17 +372,30 @@ def get_products(request):
         token = get_token_from_request(request)
         if token is None:
             return HttpResponseBadRequest("Bad Request\n")
-        print (request.GET)
-        page = request.GET.get('page', 1)
-        pagination = request.GET.get('pagination', 2)
-        
-        return HttpResponse("get_products\n")
+        page = int(request.GET.get('page', 1))
+        pagination = int(request.GET.get('pagination', 2))
 
-        # request_partner = None
-        # for partner in Partner.objects.all():
-        #     if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
-        #         request_partner = partner
-        #         break
-        # if request_partner is None:
-        #     return HttpResponseBadRequest("Bad Request\n")
-        
+        # Assumption- For now, this will return the list of products only when a valid partner
+        # queries for data. The alternative way was to only list thin-air's products if anybody else
+        # other than a partner queried.
+        request_partner = None
+        for partner in Partner.objects.all():
+            if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
+                request_partner = partner
+                break
+        if request_partner is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        uuid_ta = uuid.UUID(int=0x0)
+        uuid_partner = partner.pkey
+        prod_list = Product.objects.filter(seller__in=[uuid_ta, uuid_partner])
+        total_items = len(prod_list)
+        if total_items <= (page - 1)*pagination:
+            return HttpResponseBadRequest("Bad Request, Index out of range\n")
+        upper_bound_items = min(total_items, page*pagination)
+        items = prod_list[(page - 1)*pagination:upper_bound_items]
+        myserializer = MySerialiser()
+        response = HttpResponse(myserializer.serialize(items))
+        response['Cache-Control'] = "no-cache"
+        return response
+
+        # return HttpResponse("get_products\n")
