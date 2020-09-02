@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import RegistrationForm
 from django.contrib import messages
-from django.contrib.auth.models import User #, Partner, Product
+from django.contrib.auth.models import User
 import datetime, secrets, json, time, random, uuid, string
 from django import forms
 from django.http import HttpResponse, Http404, HttpResponseServerError, HttpResponseBadRequest
@@ -11,8 +11,13 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from environs import Env
-
-
+from hashlib import sha256
+from .models import Partner, Product
+from django.core.serializers import serialize
+from django.core.serializers.python import Serializer
+from django.core import serializers
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods, require_GET, require_POST
 def index(request):
     return render(request, 'index.html')
 
@@ -21,7 +26,7 @@ def registration(request):
         f = RegistrationForm(request.POST)
         if f.is_valid():
             username = f.cleaned_data.get('username')
-            if User.objects.filter(username__iexact=username).exists():
+            if User.objects.filter(username__exact=username).exists():
                 messages.error(request, 'Username already exists. Please use a new username.')
                 return redirect ('registration')
             last_name = f.cleaned_data.get('last_name')
@@ -47,7 +52,7 @@ def registration(request):
     return render(request, 'registration.html', {'form': f})
 
 def activation(request, username, token_slug):
-    if User.objects.filter(username__iexact=username).exists():
+    if User.objects.filter(username__exact=username).exists():
         user = User.objects.get(username=username)
         if user.useractivationinfo.enabled :
             return render(request, 'index.html')
@@ -78,7 +83,7 @@ def password_reset_request(request):
         f = PasswordResetForm(request.POST)
         if f.is_valid():
             username = f.cleaned_data.get('email')
-            if User.objects.filter(username__iexact=username).exists():
+            if User.objects.filter(username__exact=username).exists():
                 user = User.objects.get(username=username)
                 reset_time = datetime.datetime.now() + datetime.timedelta(hours=1)
                 token = secrets.token_urlsafe(64)
@@ -193,22 +198,191 @@ def google_login(request):
 
 # First I need a couple of dummy routines to populate the databases.
 
-# def add_partner():
-#     uid = uuid.uuid4()
-#     name_list = random.choices(string.ascii_lowercase, k=5)
-#     name = ''.join(name_list)
-#     url = "http://"+ name +".com"
-#     token = secrets.token_urlsafe(16)
-#     #how to store the token correctly?
-#     Partner.object.create(pkey=uid, name=name, website=url)
-#     Partner.
-# def get_or_delete_products(request, p_id):
-#     if request.method == 'GET':
-#         # return product details if authorised
-#         pass
-#         token = request.method
-#     elif request.method == 'DELETE':
-#         # return product details if authorised
-#         pass
-#     else:
-#         return HttpResponseBadRequest("Bad Request")
+def add_dummy_partner():
+    uid = uuid.uuid4()
+    print ("your uid is:", uid)
+    name_list = random.choices(string.ascii_lowercase, k=5)
+    name = ''.join(name_list)
+    print ("your name is:", name)
+    url = "http://"+ name +".com"
+    token = secrets.token_urlsafe(32)
+    salt = secrets.token_urlsafe(32)
+    print ("your token is: ", token)
+    token_hash = sha256((token + salt).encode('utf-8')).hexdigest()
+    print("the stored token hash is", token_hash)
+    new_partner = Partner.objects.create(pkey=uid, name=name, website=url, 
+                                        token=token_hash, salt=salt)
+    new_partner.save()
+
+desc_filler_text = '''Lorem ipsum dolor sit amet, consectetur adipiscing elit, 
+                    sed do eiusmod tempor incididunt ut labore et 
+                    dolore magna aliqua. Ut enim ad minim veniam, 
+                    quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+                    Duis aute irure dolor in reprehenderit in voluptate 
+                    velit esse cillum dolore eu fugiat nulla pariatur. 
+                    Excepteur sint occaecat cupidatat non proident, sunt 
+                    in culpa qui officia deserunt mollit anim id est laborum.'''
+
+def add_dummy_product(sellerid=0):
+    # pkey = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # name = models.CharField(max_length=100)
+    # description = models.TextField()
+    # slug = models.SlugField(max_length=100) #use this in the urls.
+    # price = models.DecimalField(max_digits=11, decimal_places=2)
+    # special_price = models.DecimalField(max_digits=11, decimal_places=2)
+    # count = models.IntegerField(validators=[MinValueValidator(0, "Value of count can't be less than 0.")])
+    # image = models.URLField()
+    # seller = models.UUIDField()
+    uid = uuid.uuid4()
+    name_list = []
+    for i in range(3):
+        nl_member = ''.join(random.choices(string.ascii_lowercase, k=5))
+        name_list.append(nl_member)
+    name = ' '.join(name_list)
+    description = desc_filler_text
+    numlist = random.choices(string.digits, k=7)
+    num = ''.join(numlist)
+    name_list.append(num)
+    slug = '-'.join(name_list)
+    price = float(random.randint(1550, 3890))/100
+    special_price = price - 10
+    count = random.randint(0, 4)
+    image = "http://localhost:3000/" + num + ".jpeg"
+    if sellerid == 0:
+        seller = uuid.UUID(int=0x0)
+    else :
+        seller = uuid.UUID(sellerid)
+    print ("product details: ", name, slug, price, count, seller)
+    new_product = Product.objects.create(pkey=uid, name=name, description=description, 
+                                        slug=slug, price=price, special_price=special_price,
+                                        count=count, image=image, seller=seller)
+
+# The following code to implement the MySerialiser which excludes model and pkey 
+# values has been taken from https://stackoverflow.com/a/5768757
+
+class MySerialiser(Serializer):
+    def end_object( self, obj ):
+        self._current['id'] = obj._get_pk_val()
+        self.objects.append(self._current)
+
+def get_token_from_request(request):
+    if 'HTTP_AUTHORIZATION' in request.META:
+        bearer_token = request.META['HTTP_AUTHORIZATION']
+        bearer_token = bearer_token.split(" ")
+        if len(bearer_token) == 2 and bearer_token[0] == "Bearer":
+            token = bearer_token[1]
+            # print (bearer_token)
+            # print (token)
+            return token
+        else:
+            return None
+    else:
+        return None
+
+@csrf_exempt
+@require_http_methods(["GET", "DELETE"])
+def get_or_delete_product(request, p_id):
+    if request.method == 'GET':
+        # return product details if authorised
+        valid_request = False
+        token = get_token_from_request(request)
+        if token is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        if Product.objects.filter(slug__exact=p_id).exists():
+            product = Product.objects.get(slug=p_id)
+        else:
+            return HttpResponseBadRequest("Bad Request\n")
+        if product.seller == uuid.UUID(int=0x0):
+            valid_request = True
+        else:
+            try:
+                partner = Partner.objects.get(pkey=product.seller)
+            except Partner.DoesNotExist:
+                print("Partner not found!!")
+                return HttpResponseBadRequest("Bad Request\n")
+            print("Partner's name:", partner.name)
+            if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
+                valid_request = True
+                # print ("token recieved:", token)
+        if valid_request:
+            myserializer = MySerialiser()
+            response = HttpResponse(myserializer.serialize(Product.objects.filter(slug=p_id)))
+            response['Cache-Control'] = "no-cache"
+            return response
+        else:
+            return HttpResponseBadRequest("Bad Request\n")
+    elif request.method == 'DELETE':
+        # delete product details if authorised
+        valid_request = False
+        token = get_token_from_request(request)
+        if token is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        if Product.objects.filter(slug__exact=p_id).exists():
+            product = Product.objects.get(slug=p_id)
+        else:
+            return HttpResponseBadRequest("Bad Request\n")
+        try:
+            partner = Partner.objects.get(pkey=product.seller)
+        except Partner.DoesNotExist:
+            print("Partner not found!!")
+            return HttpResponseBadRequest("Bad Request\n")
+        print("Partner's name:", partner.name)
+        if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
+            product.delete()
+            return HttpResponse("Product deleted successfully\n")
+        else:
+            return HttpResponseBadRequest("Bad Request\n")
+    else:
+        return HttpResponseBadRequest("Bad Request\n")
+
+@csrf_exempt
+@require_POST
+def create_product(request):
+    if request.method == 'POST':
+        token = get_token_from_request(request)
+        if token is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        request_partner = None
+        for partner in Partner.objects.all():
+            if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
+                request_partner = partner
+                break
+        if request_partner is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        uid = partner.pkey
+        prod = request.POST
+        # print(prod)
+        uid = uuid.uuid4()
+        slug = prod["name"].replace(" ", "-")
+        numlist = random.choices(string.digits, k=7)
+        num = ''.join(numlist)
+        slug += "-"+num
+        # print ("Slug: ", slug)
+        new_product = Product.objects.create(pkey=uid, name=prod["name"], description=prod["description"], 
+                                        slug=slug, price=prod["price"], special_price=prod["special_price"],
+                                        count=prod["count"], image=prod["image"], seller=partner.pkey)
+        new_product.save()
+        return HttpResponse("Successfully saved product!\n")
+    else:
+        return HttpResponseBadRequest("Bad Request\n")
+
+@require_GET
+def get_products(request):
+    if request.method == 'GET':
+        token = get_token_from_request(request)
+        if token is None:
+            return HttpResponseBadRequest("Bad Request\n")
+        print (request.GET)
+        page = request.GET.get('page', 1)
+        pagination = request.GET.get('pagination', 2)
+        
+        return HttpResponse("get_products\n")
+
+        # request_partner = None
+        # for partner in Partner.objects.all():
+        #     if partner.token == sha256((token + partner.salt).encode('utf-8')).hexdigest():
+        #         request_partner = partner
+        #         break
+        # if request_partner is None:
+        #     return HttpResponseBadRequest("Bad Request\n")
+        

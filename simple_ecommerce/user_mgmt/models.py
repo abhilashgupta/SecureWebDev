@@ -41,6 +41,7 @@ class Partner(models.Model):
     name = models.CharField(max_length=100)
     website = models.URLField()
     token = models.CharField(max_length=100)
+    salt = models.CharField(max_length=32, default=secrets.token_urlsafe(32))
 
 
 class Product(models.Model):
@@ -48,9 +49,14 @@ class Product(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     slug = models.SlugField(max_length=100) #use this in the urls.
-    price = models.DecimalField(max_digits=11, decimal_places=2)
-    special_price = models.DecimalField(max_digits=11, decimal_places=2)
-    abc = models.IntegerField()
+    price = models.DecimalField(max_digits=11, decimal_places=2, 
+                    validators=[MinValueValidator(0.01, 
+                        "Value of price can't be less than 0,01.")])
+    # pr = models.DecimalField()
+    special_price = models.DecimalField(max_digits=11, decimal_places=2, 
+                    validators=[MinValueValidator(0.01, 
+                        "Value of special price can't be less than 0,01.")])
     count = models.IntegerField(validators=[MinValueValidator(0, "Value of count can't be less than 0.")])
     image = models.URLField()
-    seller = models.CharField(max_length=100)
+    seller = models.UUIDField() # this will map to uuid of partner or self where
+    # self = uuid.UUID(int=0x0)

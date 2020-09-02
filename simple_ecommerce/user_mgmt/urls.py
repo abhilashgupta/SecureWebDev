@@ -26,7 +26,7 @@ urlpatterns = [
     path('accounts/password-reset/done', views.password_reset_request_done, name='password_reset_request_done'),
     path('accounts/reset/<username>/confirm', views.new_password_confirmation, name='new_password_confirmation'),
     path('accounts/reset/<username>/<slug:token_slug>', views.new_password_authentication, name='new_password_authentication'),
-    # path('api/products/<slug:p_id>'.views.get_or_delete_product, name='get_or_delete_product'),
-    # path('api/products/?page=<int:page>&pagination<int:pagi>'.views.get_products, name='get_products'),
-    # path('api/products/create'.views.create_product, name='create_product'),
+    path('api/products/create', views.create_product, name='create_product'),
+    path('api/products/<slug:p_id>', views.get_or_delete_product, name='get_or_delete_product'),
+    path('api/products', views.get_products, name='get_products'),
 ]
