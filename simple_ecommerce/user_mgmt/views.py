@@ -482,12 +482,46 @@ def add_to_cart(request):
             # return render(request, "login.html", {'ClientId' : CLIENT_ID, 'redirect_to_shop': product_slug})
             pass
 
-# def check_basket(request, order_id):
-#     if Order.objects.filter(id__exact=order_id).exists():
-#         pass
-#         order = Order.objects.get(id=order_id)
-#         cartitems_in_order = CartItem.objects.filter(order_id__exact=order_id)
-#         context = {"cartitems": cartitems_in_order, "order": order}
-#         return render(request, 'basket.html', context)
+def check_basket(request, order_id):
+    if request.user.is_authenticated:
+        if Order.objects.filter(id__exact=order_id).exists():
+            order = Order.objects.get(id=order_id)
+            if order.customer_id != request.user.username:
+                return HttpResponseBadRequest("Bad request")
+            cartitems_in_order = CartItem.objects.filter(order_id__exact=order_id)
+            cartitems_details = []
+            total_price = 0
+            for cartitem in cartitems_in_order:
+                pid = cartitem.product_id
+                try:
+                    product = Product.objects.get(pkey=pid)
+                    cartitems_details.append((cartitem, product))
+                    total_price += cartitem.quantity*product.special_price
+                except Product.DoesNotExist:
+                    print("Product {} Not Found!!".format(pid))
+            print(cartitems_details)
+            if order.placed:
+                payment = Payment.objects.get(id=order.payment)
+                context = {"cartitems": cartitems_details, "order": order, "payment": payment, 'total_price': total_price}
+                return render(request, 'basketcase.html', context)
+            else:
+                context = {"cartitems": cartitems_details, "order": order, 'total_price': total_price}
+                return render(request, 'basketcase.html', context)
+        else:
+            return HttpResponseBadRequest("Bad request")
+    else:
+        return HttpResponseBadRequest("Bad request")
+
+def checkout (request, order_id):
+    # placeholder
+    return HttpResponse()
+# def checkout(request, order_id):
+#     if request.user.is_authenticated:
+#         if Order.objects.filter(id__exact=order_id).exists():
+#             order = Order.objects.get(id=order_id)
+#             if order.customer_id != request.user.username:
+#                 return HttpResponseBadRequest("Bad request")
+#         else:
+#             return HttpResponseBadRequest("Bad request")
 #     else:
 #         return HttpResponseBadRequest("Bad request")

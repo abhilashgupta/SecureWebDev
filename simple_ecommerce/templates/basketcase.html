@@ -1,0 +1,30 @@
+{% block content %}
+    <div style="text-align:center">
+        <p>Orderid: {{ order.id }}</p>
+        {% if order.placed %}
+            <p>Order was placed on : {{ order.date_placed }}</p>
+            <p>Order was shipped to : {{ order.shipping_address }}</p>
+            <p>Total amount paid on order: €{{ payment.amount }}</p>
+        {% endif %}
+        <br>
+        <!-- <p>{{ cartitems }}</p> -->
+        {% for cartitem, product in cartitems %}
+            <!-- <p>{{ cartitem}} {{product}} </p> -->
+            <div >
+                <p>Name of product: {{ product.name }}</p>
+                <p>No of quantities: {{ cartitem.quantity }}</p>
+                <p>Total price: {{ cartitem.quantity }}*{{product.special_price}}</p>
+                <img height=200 width=300 src={{ product.image }}>
+            </div>
+        {% endfor %}
+        <div>
+            <p>Total price: {{ total_price }}</p>
+            {% if not order.placed %}
+            <button onclick='window.location.href="../checkout/"' + {{ order.id }}>Checkout</button>
+            <br>
+            {% endif %}
+            <p><a href='{% url "index" %}'>Home</a></p>
+        </div>
+        
+    </div>
+{% endblock %}
