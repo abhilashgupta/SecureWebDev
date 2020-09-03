@@ -12,12 +12,13 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from environs import Env
 from hashlib import sha256
-from .models import Partner, Product
+from .models import Partner, Product, CartItem, Payment, Address, Order
 from django.core.serializers import serialize
 from django.core.serializers.python import Serializer
 from django.core import serializers
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods, require_GET, require_POST
+
 def index(request):
     return render(request, 'index.html')
 
@@ -149,6 +150,7 @@ def google_login(request):
         json_data = json.loads(request.body)
         try:
             token = json_data['token']
+            redirect_to_shop = json_data['redirect_to_shop']
         except KeyError:
             return HttpResponseBadRequest("Malformed data!")
 
@@ -169,11 +171,18 @@ def google_login(request):
         username_verified = idinfo.get('email_verified')
 
         if username and username_verified and non_expired_token:
-            if User.objects.filter(username__iexact=username).exists():
+            if User.objects.filter(username__exact=username).exists():
                 # we have a user who already has an account with this email
                 user = User.objects.get(username=username)
                 login(request, user)
-                return render(request, 'index.html', {'user' : user})
+                if redirect_to_shop == "false":
+                    response = HttpResponse()
+                    response['redirect_to_shop'] = "False"
+                    return response
+                else:
+                    response = HttpResponse()
+                    response['redirect_to_shop'] = redirect_to_shop
+                    return response
             else:
                 # we have a new user who is directly authenticating against SSO
                 # using a random string as their password population since they
@@ -190,7 +199,14 @@ def google_login(request):
                 new_user.useractivationinfo.enabled = True
                 new_user.useractivationinfo.save()
                 login(request, new_user)
-                return render(request, 'index.html', {'user' : new_user})
+                if redirect_to_shop == "false":
+                    response = HttpResponse()
+                    response['redirect_to_shop'] = "False"
+                    return response
+                else:
+                    response = HttpResponse()
+                    response['redirect_to_shop'] = redirect_to_shop
+                    return response
         else:
             return HttpResponseBadRequest("Invalid token")
     else:
@@ -306,7 +322,7 @@ def get_or_delete_product(request, p_id):
                 # print ("token recieved:", token)
         if valid_request:
             myserializer = MySerialiser()
-            response = HttpResponse(myserializer.serialize(Product.objects.filter(slug=p_id)))
+            response = HttpResponse(myserializer.serialize(Product.objects.filter(slug__exact=p_id)))
             response['Cache-Control'] = "no-cache"
             return response
         else:
@@ -398,4 +414,80 @@ def get_products(request):
         response['Cache-Control'] = "no-cache"
         return response
 
-        # return HttpResponse("get_products\n")
+def shop_list(request):
+    products_list = Product.objects.filter(count__gt=0)[:3]
+    # myserializer = MySerialiser()
+    # products_list = myserializer.serialize(products_list)
+    context = {'products_list': products_list}
+    return render(request, 'shopping_page.html', context)
+    pass
+
+@csrf_exempt
+def add_to_cart(request):
+    if request.method == 'POST':
+        # This below part until try-except block is copied from https://stackoverflow.com/a/3244765
+        # I doubt there is any other simple way to do it though.
+        json_data = json.loads(request.body)
+        try:
+            product_slug = json_data['slug']
+        except KeyError:
+            return HttpResponseBadRequest("Malformed data!")
+        if request.user.is_authenticated:
+            # Do something for authenticated users.
+            username = request.user.username # User.objects.get(username=username)
+            print(username)
+            product = Product.objects.get(slug__exact=product_slug)
+            productid = product.pkey
+            if Order.objects.filter(customer_id__exact=username).exists():
+                pass
+                order = Order.objects.get(customer_id__exact=username)
+                orderid = order.pk            #products_list = Order.objects.get(count__gt=0)[:3]
+                
+                print (productid)
+                cartitems_in_order = CartItem.objects.filter(order_id__exact=orderid)
+                cartitem_of_this_product_found = False
+                for cartitem in cartitems_in_order:
+                    if cartitem.product_id == productid:
+                        cartitem.quantity +=1
+                        cartitem.save()
+                        cartitem_of_this_product_found = True
+                        break
+                if not cartitem_of_this_product_found:
+                    print ("new_item")
+                    new_cartitem = CartItem.objects.create(product_id=productid, quantity=1, order_id=orderid)
+                    new_cartitem.save()
+            else:
+                print ("new_order")
+                new_order = Order.objects.create(customer_id=username, placed=False, date_placed=datetime.date.today(),
+                                            shipping_address=0, payment=0)
+                new_order.save()
+                print ("new_item")
+                new_cartitem = CartItem.objects.create(product_id=productid, quantity=1, order_id=orderid)
+                new_cartitem.save()
+            products_list = Product.objects.filter(count__gt=0)[:3]
+            # myserializer = MySerialiser()
+            # products_list = myserializer.serialize(products_list)
+            return HttpResponse()
+        else:
+            # When user is not logged in.
+            # Sep 3, 22:58. Couldn't implement this part properly. Some small implementation detail in javascript,
+            # I couldn't figure out. This has changed the code of login.html to attempt to redirect to the shopping list.
+            # Running out of time right now. moving onto task 4.2.2
+            # this redirects a user to the login page. Once logged in, 
+            # the user sees a hyperlink to the product list
+            env = Env()
+            env.read_env()
+            CLIENT_ID = env("GoogleOAuth2ClientID")
+            return HttpResponseServerError()
+            # return render(request, "login.html", {'ClientId' : CLIENT_ID, 'redirect_to_shop': product_slug})
+            pass
+
+# def check_basket(request, order_id):
+#     if Order.objects.filter(id__exact=order_id).exists():
+#         pass
+#         order = Order.objects.get(id=order_id)
+#         cartitems_in_order = CartItem.objects.filter(order_id__exact=order_id)
+#         context = {"cartitems": cartitems_in_order, "order": order}
+#         return render(request, 'basket.html', context)
+#     else:
+#         return HttpResponseBadRequest("Bad request")

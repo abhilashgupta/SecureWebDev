@@ -17,6 +17,11 @@
         <form method="post" >
             {% csrf_token %}
             {{ form }}
+            {% if redirect_to_shop %}
+                <input type="hidden" id="redirect_to_shop" name="redirect_to_shop" value=redirect_to_shop>
+            {% else %}
+                <input type="hidden" id="redirect_to_shop" name="redirect_to_shop" value="false">
+            {% endif %}
             <button type="submit">Login</button>
         </form>
         <br> <br>
@@ -39,6 +44,12 @@
             var data = {
                 'token' : googleUser.getAuthResponse().id_token,
             }
+            if (document.getElementById("redirect_to_shop").value =="false"){
+                data['redirect_to_shop'] = "false";
+            }
+            else{
+                data['redirect_to_shop'] = document.getElementById("redirect_to_shop").value
+            }
             console.log(data)
             const csrftoken = getCookie('csrftoken');
             fetch('./google_login',{
@@ -49,9 +60,13 @@
                 },
                 body: JSON.stringify(data),
             }).then(response=>{
-                console.log("bad")
                 console.log(response)
                 signOut()
+                console.log(response.headers)
+                // if (response.status == 200 && response.headers['redirect_to_shop'] != "False"){
+                //     window.location.href = '../shop/products/list'
+                // }
+                // else 
                 if (response.status == 200){
                     window.location.href = '../index'
                 }

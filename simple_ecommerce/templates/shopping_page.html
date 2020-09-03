@@ -1,0 +1,97 @@
+{% block content %}
+<div>
+    <p><a href="{% url 'index' %}">Home</a></p>
+    <p id="msg"></p>
+</div>
+
+<div id="products_list">
+    {% for product in products_list %}
+        <div style="text-align:center">
+            <img src={{ product.image }} width=500 height=400 onclick='display_details({"name": "{{ product.name }}", 
+            "description": "{{ product.description }}", "price" : "{{ product.special_price }}", "count": "{{ product.count }}", 
+            "image": "{{ product.image }}", "seller": "{{ product.seller }}" , "slug": "{{ product.slug }}" })'>
+            <br>
+            <p>{{ product.name }}</p>
+            <p>{{ product.description }}</p>
+        </div>
+    {% endfor %}
+</div>
+<div id="product" style="text-align:center;display:none">
+    <img id="image">
+    <p id="name"></p>
+    <p id="desc"></p>
+    <p id="price"></p>
+    <p id="count"></p>
+    <p id="seller"></p>
+    <!-- This should ideally be a form so that I wouldn't stupidly have to exempt csrf on the server side but I am short on time. -->
+    <!-- <form method="post" >
+        {% csrf_token %}
+        {{ form }}
+        <button onclick='add_to_cart()'>Add to cart</button>
+    </form> -->
+    <button onclick='add_to_cart()'>Add to cart</button>
+    <button onclick='back_to_homepage()'>Back</button>
+</div>
+
+<script type="text/javascript">
+    var current_product = null
+    function display_details(product){
+        // let product_html = <div>
+        window.current_product = product.slug;
+        document.getElementById('name').innerHTML = "Name: " + product.name;
+        document.getElementById('desc').innerHTML = "Description: " + product.description;
+        document.getElementById('price').innerHTML = "Price: " + product.price + "€";
+        document.getElementById('count').innerHTML = "Quantity: " + product.count;
+        //Seller currently wlll show seller id, which makes no sense in real life
+        //Will update this if there is time.
+        //For now this is a feature, not a bug. :P
+        document.getElementById('seller').innerHTML = "Seller: " + product.seller;
+        document.getElementById("image").src = product.image;
+        document.getElementById("image").height = 500;
+        document.getElementById("image").width = 600;
+        window.location = "{% url 'shop_list' %}"+"#"+JSON.stringify(product);
+        // console.log(document.getElementById("products_list"))
+        document.getElementById("products_list").style.display ="none";
+        document.getElementById('product').style.display ="block";
+    }
+    function back_to_homepage(){
+        window.current_product = null;
+        document.getElementById("products_list").style.display ="block";
+        document.getElementById('product').style.display ="none";
+        window.location = "{% url 'shop_list' %}";
+    }
+    function add_to_cart(){
+        var data = {
+                'slug' : window.current_product,
+            }
+        fetch('{% url "add_to_cart" %}',{
+                method:'post',
+                headers:{
+                    'Content-Type':'application/json',
+                    // "X-CSRFToken": csrftoken,
+                },
+                body: JSON.stringify(data),
+            }).then(response=>{
+                if (response.status == 200){
+                    window.location.href = './list'
+                }
+                else{
+                    window.location.href = '../../index'
+                }
+                // console.log(response)
+                // signOut()
+                // if (response.status == 200){
+                //     window.location.href = '../index'
+                // }
+                // else{
+                //     window.location.href = 'registration'
+                // }
+            })
+        // window.current_product = null;
+        // document.getElementById("products_list").style.display ="block";
+        // document.getElementById('product').style.display ="none";
+        // window.location = "{% url 'shop_list' %}";
+    }
+</script>
+
+{% endblock %}

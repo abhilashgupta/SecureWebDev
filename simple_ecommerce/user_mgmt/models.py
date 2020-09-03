@@ -62,20 +62,20 @@ class Product(models.Model):
     # self = uuid.UUID(int=0x0)
 
 class CartItem(models.Model):
-    pk = models.AutoField(primary_key=True)
+    # pk = models.AutoField(primary_key=True) # pk is a reserved word. use the default pk/id.
     product_id = models.UUIDField() #uid of product
     quantity = models.IntegerField(validators=[MinValueValidator(0, "Value of quantity can't be less than 0.")])
     order_id = models.IntegerField(validators=[MinValueValidator(0, "Value of order_id can't be less than 0.")])
 
 class Payment(models.Model):
-    pk = models.AutoField(primary_key=True)
+    # pk = models.AutoField(primary_key=True)# pk is a reserved word. use the default pk/id.
     amount = models.DecimalField(max_digits=11, decimal_places=2, 
                     validators=[MinValueValidator(0.01, 
                         "Value of price can't be less than 0,01.")])
-    method = models.CharField(max_length=100)
+    method = models.CharField(max_length=100, default="Paypal")
 
 class Address(models.Model):
-    pk = models.AutoField(primary_key=True)
+    # pk = models.AutoField(primary_key=True)# pk is a reserved word. use the default pk/id.
     user = models.CharField(max_length=150) #username(email in our case) of user
     street = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
@@ -84,9 +84,9 @@ class Address(models.Model):
     additional_info = models.TextField()
 
 class Order(models.Model):
-    pk = models.AutoField(primary_key=True)
+    # pk = models.AutoField(primary_key=True)# pk is a reserved word. use the default pk/id.
     customer_id = models.CharField(max_length=150)
     placed = models.BooleanField(default=False)
-    date_placed = models.DateField()
+    date_placed = models.DateField(default=timezone.now)
     shipping_address = models.IntegerField() #pk of address object
     payment = models.IntegerField() #pk of payment object
