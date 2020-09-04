@@ -662,4 +662,30 @@ def view_private(request, username):
     }
     context = {'username' : username, 'orderlist' : [order1, order2]}
     return render(request, 'private_page.html', context )
-    pass
+
+
+def view_public(request, username):
+    if request.user.is_authenticated and username == request.user.username:
+        owner = "true"
+    else:
+        owner = None
+    item1 = {'name' : 'Navratna Tel',
+              'image' : 'http://2.imimg.com/data2/NY/TE/MY-3394706/navratan-oil--250x250.jpg',
+              'price' : 22.47,
+              'special_price' : 22.46,
+              'description' : 'Thanda thanda Cool cool'
+    }
+    item2 = {'name' : 'Lifebouy',
+              'image' : 'http://www.24by7bazzar.com/images/Lifebuoy%20Bar%20Tprotect.jpg',
+              'price' : 0.47,
+              'special_price' : 0.23,
+              'description' : 'Lifebouy hai jaha, tandrusti hai waha'
+    }
+    context = {'owner' : owner, 'itemlist' : [item1, item2]}
+    return render(request, 'public_store.html', context )
+
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+@xframe_options_exempt
+def high_air(request):
+    return render(request, 'high_air.html')

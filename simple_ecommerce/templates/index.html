@@ -1,5 +1,5 @@
 {% block content %}
-     <div class="index">
+    <div class="index">
         {% if user.useractivationinfo.enabled %}
             <h1>Welcome to thin-air, {{ user.get_full_name }}!</h1>
             <br><br>
@@ -11,6 +11,6 @@
             <p><a href="accounts/login">Login</a></p>
             <p><a href="accounts/registration">Register</a></p>
         {% endif %}
-     </div>
+    </div>
 
 {% endblock %}

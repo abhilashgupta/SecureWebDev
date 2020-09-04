@@ -1,0 +1,60 @@
+{% block content %}
+    {% if not owner %}
+        <script>
+            console.log("not owner");
+            window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+            ga('create', 'UA-XXXX-Y', 'auto');
+            ga('send', 'pageview');
+        </script>
+        <script async src='https://www.google-analytics.com/analytics.js'></script>
+    {% endif %}
+    {% if not owner %}
+        <iframe id='destination-frame' src='http://localhost:2000/high-air/' onload="send_tracker()"></iframe>
+    {% else %}
+        <script>
+            console.log("dsba");
+        </script>
+    {% endif %}
+    <div style="text-align:center">
+        
+        <!-- <p>{{ cartitems }}</p> -->
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <h1>{{ message }}</h1>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <h5>Your Items for sale:</h5>
+        {% for item  in itemlist %}
+            <!-- <p>{{ cartitem}} {{product}} </p> -->
+            <div >
+                <p>Name: {{ item.name}}</p>
+                <img height=200 width=300 src={{ item.image }}>
+                <p>Price : {{ item.price }}</p>
+                <p>Special Offer price: {{ item.special_price }}</p>
+                <p>Description: {{ item.description }}</p>
+            </div>
+            <br><br>
+        {% endfor %}
+
+        <p><a href="../../index">home</p>
+    </div>
+    {% if not owner %}
+        <script>
+            function send_tracker(){
+                ga(function(tracker){
+                    console.log(tracker)
+                    var clientId = tracker.get('clientId');
+                    var frameWindow = document.getElementById('destination-frame').contentWindow;
+                    // console.log(frameWindow)
+                    frameWindow.postMessage("why won't you work?", 'http://localhost:2000');
+                    frameWindow.postMessage(clientId, 'http://localhost:2000');
+                    console.log("msg sent")
+                });
+            }
+            
+        </script>
+    {% endif %}
+    
+{% endblock %}

@@ -13,3 +13,5 @@ Project P4 - when an unlogged user tries to add an item to cart/basket, they are
             Post login, the page doesn't redirect to the shopping page (couldn't figure this out.)
             The user sees a link to go to the shopping list page.
 Project P4 -  Apart from the above mentioned case, is done.
+Project P4 - The above part is acceptable behaviour according to the tutor. Leaving it at that. Some vulnerabilities exposed. Will come back to patch them up.
+Project P5 is done.
