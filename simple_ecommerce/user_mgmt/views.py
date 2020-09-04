@@ -118,7 +118,7 @@ def new_password_authentication(request, username, token_slug):
         if now < user.useractivationinfo.reset_time:
             user.useractivationinfo.reset_time = datetime.datetime.now()
             user.useractivationinfo.save()
-        return HttpResponse(request, 'Invalid Token.')
+        return HttpResponse('Invalid Token.')
 
 def new_password_confirmation(request, username):
     if request.method == 'POST':
@@ -420,8 +420,8 @@ def shop_list(request):
     # products_list = myserializer.serialize(products_list)
     context = {'products_list': products_list}
     return render(request, 'shopping_page.html', context)
-    pass
 
+# TODO: implement csrf protection
 @csrf_exempt
 def add_to_cart(request):
     if request.method == 'POST':
@@ -482,6 +482,7 @@ def add_to_cart(request):
             # return render(request, "login.html", {'ClientId' : CLIENT_ID, 'redirect_to_shop': product_slug})
             pass
 
+# Not return 4xx?
 def check_basket(request, order_id):
     if request.user.is_authenticated:
         if Order.objects.filter(id__exact=order_id).exists():
@@ -521,7 +522,7 @@ def check_basket(request, order_id):
     else:
         return HttpResponseBadRequest("Bad request")
 
-
+# Not return 4xx?
 def checkout(request, order_id):
     if request.user.is_authenticated:
         if Order.objects.filter(id__exact=order_id).exists():
@@ -563,6 +564,7 @@ def checkout(request, order_id):
     else:
         return HttpResponseBadRequest("Bad request")
 
+# Not return 4xx?
 @require_POST
 def confirm_checkout(request):
     if request.method == 'POST':
@@ -637,3 +639,27 @@ def confirm_checkout(request):
         return HttpResponse("Alled Gut! Order placed successfully")
     else:
         raise Http404("This is not the page that you are looking for!")
+
+# TODO Sanitise above against XSS.
+
+def view_private(request, username):
+    if not request.user.is_authenticated:
+        print ("User not logged in")
+        return HttpResponse("Access Denied! Log in with correct credentials")
+    if username != request.user.username:
+        print ("illegal access")
+        return HttpResponse("Access Denied! Log in with correct credentials")
+    
+    order1 = {'pk' : 3,
+              'date_placed' : '07-09-2020',
+              'price' : 22.47,
+              'address' : 'Khau Galli, Saki Naka'
+    }
+    order2 = {'pk' : 42,
+              'date_placed' : 'the last day',
+              'price' : 'Earth',
+              'address' : 'The restaurant at the end of the world'
+    }
+    context = {'username' : username, 'orderlist' : [order1, order2]}
+    return render(request, 'private_page.html', context )
+    pass

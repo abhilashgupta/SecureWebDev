@@ -1,0 +1,28 @@
+{% block content %}
+    <div style="text-align:center">
+        
+        <!-- <p>{{ cartitems }}</p> -->
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <h1>{{ message }}</h1>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <p>Welcome {{ username }}, this is your personal page!</p>
+        <br>
+
+        <h5>Your last Orders:</h5>
+        {% for order  in orderlist %}
+            <!-- <p>{{ cartitem}} {{product}} </p> -->
+            <div >
+                <p>Order id: {{ order.pk }}</p>
+                <p>Date placed: {{ order.date_placed }}</p>
+                <p>Total price: {{ order.price }}</p>
+                <p>Total price: {{ order.address }}</p>
+            </div>
+            <br><br>
+        {% endfor %}
+        <p><a href="../../index">home</p>
+    </div>
+{% endblock %}

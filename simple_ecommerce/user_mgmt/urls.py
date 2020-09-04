@@ -34,4 +34,5 @@ urlpatterns = [
     path('shop/basket/<int:order_id>', views.check_basket, name='check_basket'),
     path('shop/checkout/confirm', views.confirm_checkout, name='confirm_checkout'),
     path('shop/checkout/<int:order_id>', views.checkout, name='checkout'),
+    path('profile/<username>/private', views.view_private, name='view_private'),
 ]
