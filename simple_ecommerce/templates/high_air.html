@@ -1,13 +1,13 @@
 {% block content %}
     <script type="text/javascript">
-        console.log("bdaffds")
+        // console.log("bdaffds")
         window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
         window.addEventListener('message', receiveMessage);
         function receiveMessage(event){
-            console.log("bsfa2");
+            // console.log("bsfa2");
             if (event.origin != 'http://localhost:3000') return;
-            console.log(event.data);
-            // ga('create', 'UA-XXXX-Y', 'auto', {clientId: event.data});
+            // console.log("event.data", event.data);
+            ga('create', '{{ tracker }}', 'auto', {clientId: event.data});
         }
     </script>
         <h1>Welcome to high-air!</h1>

@@ -421,8 +421,7 @@ def shop_list(request):
     context = {'products_list': products_list}
     return render(request, 'shopping_page.html', context)
 
-# TODO: implement csrf protection
-@csrf_exempt
+@require_POST
 def add_to_cart(request):
     if request.method == 'POST':
         # This below part until try-except block is copied from https://stackoverflow.com/a/3244765
@@ -462,6 +461,7 @@ def add_to_cart(request):
                                             shipping_address=0, payment=0)
                 new_order.save()
                 print ("new_item")
+                orderid = new_order.id
                 new_cartitem = CartItem.objects.create(product_id=productid, quantity=1, order_id=orderid)
                 new_cartitem.save()
             products_list = Product.objects.filter(count__gt=0)[:3]
@@ -619,14 +619,6 @@ def confirm_checkout(request):
         new_payment = Payment.objects.create(amount=pamount, method=pdetails)
         new_payment.save()
         print(request.user.username, saddress)
-    #     class Address(models.Model):
-    # # pk = models.AutoField(primary_key=True)# pk is a reserved word. use the default pk/id.
-    # user = models.CharField(max_length=150) #username(email in our case) of user
-    # street = models.CharField(max_length=100)
-    # city = models.CharField(max_length=100)
-    # zip_code = models.IntegerField()
-    # country = models.CharField(max_length=100)
-    # additional_info = models.TextField()
         new_ad = Address.objects.create(user=request.user.username, street=saddress['street'], city=saddress['city'], 
                                         zip_code=saddress['zipcode'], country=saddress['country'],
                                         additional_info=saddress['add_info'])
@@ -640,7 +632,6 @@ def confirm_checkout(request):
     else:
         raise Http404("This is not the page that you are looking for!")
 
-# TODO Sanitise above against XSS.
 
 def view_private(request, username):
     if not request.user.is_authenticated:
@@ -681,11 +672,19 @@ def view_public(request, username):
               'special_price' : 0.23,
               'description' : 'Lifebouy hai jaha, tandrusti hai waha'
     }
-    context = {'owner' : owner, 'itemlist' : [item1, item2]}
+    env = Env()
+    env.read_env()
+    TRACKER_ID = env("GoogleTrackerID")
+    # print (TRACKER_ID, type(TRACKER_ID))
+    context = {'owner' : owner, 'itemlist' : [item1, item2], 'tracker': TRACKER_ID}
     return render(request, 'public_store.html', context )
 
 from django.views.decorators.clickjacking import xframe_options_exempt
 
 @xframe_options_exempt
 def high_air(request):
-    return render(request, 'high_air.html')
+    env = Env()
+    env.read_env()
+    TRACKER_ID = env("GoogleTrackerID")
+    # print (TRACKER_ID, type(TRACKER_ID))
+    return render(request, 'high_air.html', {'tracker': TRACKER_ID})

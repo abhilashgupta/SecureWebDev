@@ -69,9 +69,9 @@
         window.address += " " + document.getElementById('pincode').value;
         if (document.getElementById('add_info').value != ""){
             console.log("a");
-            window.address += " " + "Additional info: " + document.getElementById('add_info').value;
+            window.address += " " + "additional info: " + document.getElementById('add_info').value;
         }
-        document.getElementById('add').innerHTML = "Address:<br>" + window.address;
+        document.getElementById('add').textContent = "Address:" + window.address;
         document.getElementById("address_form").style.display ="none";
         document.getElementById('address').style.display ="block";
     }
@@ -142,23 +142,23 @@
     }
 
     // This function has been copied from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
-        // because fetch needs the csrf token and there seems to be no other way of extracting this
-        // when it also contains a header. 
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
+    // because fetch needs the csrf token and there seems to be no other way of extracting this
+    // when it also contains a header. 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
-            return cookieValue;
         }
+        return cookieValue;
+    }
 </script>
 
 {% endblock %}

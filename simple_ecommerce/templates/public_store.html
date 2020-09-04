@@ -3,7 +3,7 @@
         <script>
             console.log("not owner");
             window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
-            ga('create', 'UA-XXXX-Y', 'auto');
+            ga('create', '{{ tracker }}', 'auto');
             ga('send', 'pageview');
         </script>
         <script async src='https://www.google-analytics.com/analytics.js'></script>
@@ -11,9 +11,7 @@
     {% if not owner %}
         <iframe id='destination-frame' src='http://localhost:2000/high-air/' onload="send_tracker()"></iframe>
     {% else %}
-        <script>
-            console.log("dsba");
-        </script>
+        <iframe src='about:blank'></iframe>
     {% endif %}
     <div style="text-align:center">
         
@@ -47,8 +45,6 @@
                     console.log(tracker)
                     var clientId = tracker.get('clientId');
                     var frameWindow = document.getElementById('destination-frame').contentWindow;
-                    // console.log(frameWindow)
-                    frameWindow.postMessage("why won't you work?", 'http://localhost:2000');
                     frameWindow.postMessage(clientId, 'http://localhost:2000');
                     console.log("msg sent")
                 });

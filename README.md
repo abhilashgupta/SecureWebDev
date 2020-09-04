@@ -4,7 +4,11 @@ Project repository for the Secure Web Development block course, Sose 2020.
 I have tested this using Google Chrome and Safari as the browser, running on Python 3.8.5 and Django 3.1
 
 To run the project on another "port-number" than default 8000, start the django server as -
-python manage.py runserver "port-number"
+python3 manage.py runserver "port-number"
+e.g
+python3 manage.py runserver 3000
+or
+python3 manage.py runserver 2000
 
 Project P1 is done.
 Project P2 is done.
@@ -14,4 +18,5 @@ Project P4 - when an unlogged user tries to add an item to cart/basket, they are
             The user sees a link to go to the shopping list page.
 Project P4 -  Apart from the above mentioned case, is done.
 Project P4 - The above part is acceptable behaviour according to the tutor. Leaving it at that. Some vulnerabilities exposed. Will come back to patch them up.
+Project P4 - The vulnerabilities are plugged (most of them). Moved tracker to env for P5.
 Project P5 is done.

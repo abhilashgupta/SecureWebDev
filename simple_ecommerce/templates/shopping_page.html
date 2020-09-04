@@ -22,12 +22,9 @@
     <p id="price"></p>
     <p id="count"></p>
     <p id="seller"></p>
-    <!-- This should ideally be a form so that I wouldn't stupidly have to exempt csrf on the server side but I am short on time. -->
-    <!-- <form method="post" >
+    <form>
         {% csrf_token %}
-        {{ form }}
-        <button onclick='add_to_cart()'>Add to cart</button>
-    </form> -->
+    </form>
     <button onclick='add_to_cart()'>Add to cart</button>
     <button onclick='back_to_homepage()'>Back</button>
 </div>
@@ -37,14 +34,14 @@
     function display_details(product){
         // let product_html = <div>
         window.current_product = product.slug;
-        document.getElementById('name').innerHTML = "Name: " + product.name;
-        document.getElementById('desc').innerHTML = "Description: " + product.description;
-        document.getElementById('price').innerHTML = "Price: " + product.price + "€";
-        document.getElementById('count').innerHTML = "Quantity: " + product.count;
+        document.getElementById('name').textContent = "Name: " + product.name;
+        document.getElementById('desc').textContent = "Description: " + product.description;
+        document.getElementById('price').textContent = "Price: " + product.price + "€";
+        document.getElementById('count').textContent = "Quantity: " + product.count;
         //Seller currently wlll show seller id, which makes no sense in real life
         //Will update this if there is time.
         //For now this is a feature, not a bug. :P
-        document.getElementById('seller').innerHTML = "Seller: " + product.seller;
+        document.getElementById('seller').textContent = "Seller: " + product.seller;
         document.getElementById("image").src = product.image;
         document.getElementById("image").height = 500;
         document.getElementById("image").width = 600;
@@ -63,11 +60,12 @@
         var data = {
                 'slug' : window.current_product,
             }
+        const csrftoken = getCookie('csrftoken');
         fetch('{% url "add_to_cart" %}',{
                 method:'post',
                 headers:{
                     'Content-Type':'application/json',
-                    // "X-CSRFToken": csrftoken,
+                    "X-CSRFToken": csrftoken,
                 },
                 body: JSON.stringify(data),
             }).then(response=>{
@@ -78,11 +76,48 @@
                     window.location.href = '../../index'
                 }
             })
-        // window.current_product = null;
-        // document.getElementById("products_list").style.display ="block";
-        // document.getElementById('product').style.display ="none";
-        // window.location = "{% url 'shop_list' %}";
     }
+    // This function has been copied from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+    // because fetch needs the csrf token and there seems to be no other way of extracting this
+    // when it also contains a header. 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.location.hash){
+            var product_json = location.hash.substr(1);
+            product_json = decodeURIComponent(product_json);
+            product = JSON.parse(product_json);
+            console.log(product['name']);
+            window.current_product = product['slug']
+            document.getElementById('name').textContent = "Name: " + product['name'];
+            document.getElementById('desc').textContent = "Description: " + product['description'];
+            document.getElementById('price').textContent = "Price: " + product['price']+ "€";
+            document.getElementById('count').textContent = "Quantity: " + product['count'];
+            //Seller currently wlll show seller id, which makes no sense in real life
+            //Will update this if there is time.
+            //For now this is a feature, not a bug. :P
+            document.getElementById('seller').textContent = "Seller: " + product['seller'];
+            document.getElementById("image").src = product['image'];
+            document.getElementById("image").height = 500;
+            document.getElementById("image").width = 600;
+            // console.log(document.getElementById("products_list"))
+            document.getElementById("products_list").style.display ="none";
+            document.getElementById('product').style.display ="block";
+        }
+    }, false);
 </script>
 
 {% endblock %}
