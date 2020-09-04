@@ -28,7 +28,7 @@ def create_user_profile(sender, instance, created, **kwargs):
         instance.useractivationinfo.activation_token = random_token
         instance.useractivationinfo.reset_token = ""
         instance.useractivationinfo.reset_time = datetime.datetime.now()
-        activation_url = "127.0.0.1:8000/accounts/"+ instance.username + "/verify/" + random_token
+        activation_url = "http://localhost:3000/accounts/"+ instance.username + "/verify/" + random_token
         print ("Activation link:", activation_url)
 
 
