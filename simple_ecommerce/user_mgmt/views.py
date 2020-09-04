@@ -495,9 +495,18 @@ def check_basket(request, order_id):
                 pid = cartitem.product_id
                 try:
                     product = Product.objects.get(pkey=pid)
-                    cartitems_details.append((cartitem, product))
-                    total_price += cartitem.quantity*product.special_price
+                    if product.count <= 0:
+                        messages.error(request, "Product {} is not longer available in our inventory".format(product.name))
+                    elif cartitem.quantity > product.count:
+                        messages.error(request, "{} pieces of product {} is available in our \
+                        inventory".format(product.count, product.name))
+                        messages.info(request, "Please decrease the quantity of this product to below {} \
+                            in your basket before proceeding with checkout".format(product.count))
+                    else:
+                        cartitems_details.append((cartitem, product))
+                        total_price += cartitem.quantity*product.special_price
                 except Product.DoesNotExist:
+                    messages.error(request, "Product {} is not longer available in our inventory".format(product.name))
                     print("Product {} Not Found!!".format(pid))
             print(cartitems_details)
             if order.placed:
@@ -512,16 +521,119 @@ def check_basket(request, order_id):
     else:
         return HttpResponseBadRequest("Bad request")
 
-def checkout (request, order_id):
-    # placeholder
-    return HttpResponse()
-# def checkout(request, order_id):
-#     if request.user.is_authenticated:
-#         if Order.objects.filter(id__exact=order_id).exists():
-#             order = Order.objects.get(id=order_id)
-#             if order.customer_id != request.user.username:
-#                 return HttpResponseBadRequest("Bad request")
-#         else:
-#             return HttpResponseBadRequest("Bad request")
-#     else:
-#         return HttpResponseBadRequest("Bad request")
+
+def checkout(request, order_id):
+    if request.user.is_authenticated:
+        if Order.objects.filter(id__exact=order_id).exists():
+            order = Order.objects.get(id=order_id)
+            if order.customer_id != request.user.username:
+                return HttpResponseBadRequest("Bad request")
+            if order.placed:
+                return HttpResponseBadRequest("Bad request")
+            cartitems_in_order = CartItem.objects.filter(order_id__exact=order_id)
+            cartitems_details = []
+            total_price = 0
+            for cartitem in cartitems_in_order:
+                pid = cartitem.product_id
+                try:
+                    product = Product.objects.get(pkey=pid)
+                    if product.count <= 0:
+                        msg = "Product {} is not longer available in our inventory. Please remove this product from your \
+                                basket before proceeding with checkout".format(product.name)
+                        return HttpResponseBadRequest("Bad request: ", msg)
+                    elif cartitem.quantity > product.count:
+                        msg = "Only {} pieces of product {} is available in our \
+                        inventory. Please decrease the quantity of this product to below {} \
+                            in your basket before proceeding with checkout".format(product.count, product.name, product.count+1)
+                        return HttpResponseBadRequest("Bad request: " + msg)
+                    else:
+                        cartitems_details.append((cartitem, product))
+                        total_price += cartitem.quantity*product.special_price
+                except Product.DoesNotExist:
+                    print("Product {} Not Found!!".format(pid))
+                    msg = "Product {} is not longer available in our inventory. Please remove it from \
+                         your basket before proceeding to checkout".format(product.name)
+                    return HttpResponseBadRequest("Bad request: " + msg)
+
+            print(cartitems_details)
+            context = {"cartitems": cartitems_details, "order": order, 'total_price': total_price}
+            return render(request, 'checkout.html', context)
+        else:
+            return HttpResponseBadRequest("Bad request")
+    else:
+        return HttpResponseBadRequest("Bad request")
+
+@require_POST
+def confirm_checkout(request):
+    if request.method == 'POST':
+        # This below part until try-except block is copied from https://stackoverflow.com/a/3244765
+        # I doubt there is any other simple way to do it though.
+        json_data = json.loads(request.body)
+        try:
+            pdetails = json_data['payment_details']
+            saddress = json_data['shipping_address']
+            item_list = json_data['item_list']
+            order_id = json_data['order_id']
+            pamount = json_data['payment_amount']
+        except KeyError:
+            return HttpResponseBadRequest("Malformed data!")
+        if pdetails == "" or not item_list: #malformed data in corner case that I don't expect to ever happen, honestly
+            print("Malformed data -", json_data)
+            return HttpResponseBadRequest("Malformed data!")
+        # print(json_data)
+        # return HttpResponse("abd")
+        try:
+            order = Order.objects.get(pk=order_id)
+        except Order.DoesNotExist:
+            print("Order id {} doesn't exist".format(order_id))
+            return HttpResponseBadRequest("Malformed data!")
+
+        if request.user.username != order.customer_id:
+            print("Order id {} is not of user".format(order_id, request.user.username))
+            return HttpResponseBadRequest("Bad Request")
+        cartitems_in_order = CartItem.objects.filter(order_id__exact=order_id)
+        print(cartitems_in_order)
+        cartitem_list = []
+        il_len = len(item_list)
+        # This is my very convoluted code to ensure that the number of available items are proper
+        # and that the carts have the correct product and correct quantity.
+        # not 100% sure what I did here.
+        for pkey, ci_count in item_list:
+            ppkey = uuid.UUID(pkey)
+            product = Product.objects.get(pkey=ppkey)
+            for cartitem in cartitems_in_order:
+                if ppkey == cartitem.product_id and ci_count == cartitem.quantity and product.count >= cartitem.quantity:
+                    cartitem_list.append(cartitem)
+                    break
+
+        if len(item_list) != len(cartitems_in_order):
+            print("Number of objects in cart from request", len(item_list))
+            print("Number of objects in local cart database in this order", len(cartitems_in_order))
+            print ("Order id", order_id)
+            print("Possibly database has changed in this small timeframe. Ask user to resubmit")
+            return HttpResponseServerError("Request failed!")
+
+        # at this point, all should be fine (or I have seriously messed up checking in the for loop above)
+        new_payment = Payment.objects.create(amount=pamount, method=pdetails)
+        new_payment.save()
+        print(request.user.username, saddress)
+    #     class Address(models.Model):
+    # # pk = models.AutoField(primary_key=True)# pk is a reserved word. use the default pk/id.
+    # user = models.CharField(max_length=150) #username(email in our case) of user
+    # street = models.CharField(max_length=100)
+    # city = models.CharField(max_length=100)
+    # zip_code = models.IntegerField()
+    # country = models.CharField(max_length=100)
+    # additional_info = models.TextField()
+        new_ad = Address.objects.create(user=request.user.username, street=saddress['street'], city=saddress['city'], 
+                                        zip_code=saddress['zipcode'], country=saddress['country'],
+                                        additional_info=saddress['add_info'])
+        new_ad.save()
+        order.date_placed = datetime.date.today()
+        order.payment = new_payment.id
+        order.shipping_address = new_ad.id
+        order.placed = True
+        order.save()
+        return HttpResponse("Alled Gut! Order placed successfully")
+    else:
+        raise Http404("This is not the page that you are looking for!")

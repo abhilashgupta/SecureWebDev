@@ -12,3 +12,4 @@ Project P3 is done.
 Project P4 - when an unlogged user tries to add an item to cart/basket, they are redirected to the login page.
             Post login, the page doesn't redirect to the shopping page (couldn't figure this out.)
             The user sees a link to go to the shopping list page.
+Project P4 -  Apart from the above mentioned case, is done.

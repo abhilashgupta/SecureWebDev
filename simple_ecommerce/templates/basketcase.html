@@ -8,6 +8,13 @@
         {% endif %}
         <br>
         <!-- <p>{{ cartitems }}</p> -->
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                <h1>{{ message }}</h1>
+                {% endfor %}
+            </ul>
+        {% endif %}
         {% for cartitem, product in cartitems %}
             <!-- <p>{{ cartitem}} {{product}} </p> -->
             <div >
@@ -20,7 +27,7 @@
         <div>
             <p>Total price: {{ total_price }}</p>
             {% if not order.placed %}
-            <button onclick='window.location.href="../checkout/"' + {{ order.id }}>Checkout</button>
+            <button onclick='window.location.href="../checkout/{{ order.id }}"'>Proceed to checkout</button>
             <br>
             {% endif %}
             <p><a href='{% url "index" %}'>Home</a></p>

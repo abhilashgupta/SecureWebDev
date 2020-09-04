@@ -1,0 +1,164 @@
+{% block content %}
+<div>
+    <p><a href="{% url 'index' %}">Home</a></p>
+</div>
+
+<div id="address_form" style="text-align:center;display:block">
+    <p>Please fill in your shipping address:</p>
+    <form>
+        <label for="fname">First name:</label>
+        <input type="text" id="fname" name="fname" required><br>
+        <label for="lname">Last name:</label>
+        <input type="text" id="lname" name="lname" required><br>
+        <label for="street">Street:</label>
+        <input type="text" id="street" name="street" required><br>
+        <label for="add_info">Additional Info:</label>
+        <input type="text" id="add_info" name="add_info"><br>
+        <label for="country">Country:</label>
+        <input type="text" id="country" name="country" required><br>
+        <label for="City">City:</label>
+        <input type="text" id="city" name="city"required ><br>
+        <label for="pincode">Zipcode:</label>
+        <input type="text" id="pincode" name="pincode" required><br>
+        
+      </form>
+      <button onclick='set_address()'>Set Address</button>
+</div>
+<div id="address" style="text-align:center;display:none">
+    <p id="add"></p>
+    <button onclick='edit_address()'>Edit Address</button>
+</div>
+<div style="text-align:center;display:block">
+    {% if messages %}
+        {% for message in messages %}
+        <h5>{{ message }}</h5>
+        {% endfor %}
+    {% endif %}
+    {% for cartitem, product in cartitems %}
+        <!-- <p>{{ cartitem}} {{product}} </p> -->
+        <div >
+            <p>Name of product:"{{ product.name }}" No of quantities:"{{ cartitem.quantity }}" Total price="{{ cartitem.quantity }}*{{product.special_price}}"</p>
+            <p id=total_price>Total Amount due: {{ total_price }}</p>
+        </div>
+    {% endfor %}
+    <div id="address_form" style="text-align:center;display:block">
+        <form>
+            {% csrf_token %}
+            <label for="payment">Payment Details:</label>
+            <input type="text" id="payment" name="payment" required><br>
+        </form>
+        <button onclick='checkout()'>Make Payment</button>
+    </div>
+</div>
+
+<script type="text/javascript">
+    var address = null;
+    function set_address(){
+        console.log("set_address called")
+        if (document.getElementById('fname').value=="" || document.getElementById('lname').value=="" 
+            || document.getElementById('street').value=="" || document.getElementById('city').value=="" 
+            || document.getElementById('pincode').value=="" || document.getElementById('country').value==""){
+            alert("All fields except Additional info must be filled!");
+            return;
+        }
+        window.address = document.getElementById('fname').value;
+        window.address += " " + document.getElementById('lname').value;
+        window.address += " " + document.getElementById('street').value;
+        window.address += " " + document.getElementById('city').value;
+        window.address += " " + document.getElementById('country').value;
+        window.address += " " + document.getElementById('pincode').value;
+        if (document.getElementById('add_info').value != ""){
+            console.log("a");
+            window.address += " " + "Additional info: " + document.getElementById('add_info').value;
+        }
+        document.getElementById('add').innerHTML = "Address:<br>" + window.address;
+        document.getElementById("address_form").style.display ="none";
+        document.getElementById('address').style.display ="block";
+    }
+
+    function edit_address(){
+        window.address = null;
+        console.log("edit_address called");
+        document.getElementById("address_form").style.display ="block";
+        document.getElementById('address').style.display ="none";
+    }
+    data1 = null
+    function checkout(){
+        if (window.address == null){
+            alert("Shipping address is not set, Please set it")
+            return;
+        }
+        if (document.getElementById('payment').value == ""){
+            alert("Please enter your payment details")
+            return;
+        }
+        var total_payment_amount = {{ total_price }}
+        console.log("bda")
+        var myaddress = {
+                    'fname' : document.getElementById('fname').value,
+                    'lname' : document.getElementById('lname').value,
+                    'city' : document.getElementById('city').value,
+                    'street' : document.getElementById('street').value,
+                    'country' : document.getElementById('country').value,
+                    'zipcode' : document.getElementById('pincode').value,
+                    'add_info' : document.getElementById('add_info').value,           
+        }
+        var data = {
+                'payment_details' : document.getElementById('payment').value,
+                'shipping_address' : myaddress,
+                'item_list': [],
+                'order_id':{{ order.id }},
+                'payment_amount' : {{ total_price }},
+        }
+        {% for cartitem, product in cartitems %}
+            data['item_list'].push(["{{ product.pkey}}", "{{cartitem.quantity}}"])
+        {% endfor %}
+        window.data1 = data
+        console.log(data)
+        const csrftoken = getCookie('csrftoken');
+        fetch('{% url "confirm_checkout" %}',{
+                method:'post',
+                headers:{
+                    'Content-Type':'application/json',
+                    "X-CSRFToken": csrftoken,
+                },
+                body: JSON.stringify(data),
+        }).then(response=>{
+            console.log(response)
+            if (response.status == 200){
+                document.write("Order placed successfully <a href='../../index'>Home</a>");
+            }
+            else if (response.status == 404){
+                document.write("404 This is not the page that you are looking for! <a href='../../index'>Home</a>");
+            }
+            else if (response.status == 500){
+                document.write("Internal Server Error. Please retry <a href='../../index'>Home</a>");
+            }
+            else{
+                document.write("Bad Request <a href='../../index'>Home</a>");
+            }
+            console.log(response)
+        })
+    }
+
+    // This function has been copied from https://docs.djangoproject.com/en/dev/ref/csrf/#ajax
+        // because fetch needs the csrf token and there seems to be no other way of extracting this
+        // when it also contains a header. 
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+</script>
+
+{% endblock %}

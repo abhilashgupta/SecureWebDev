@@ -20,7 +20,6 @@ urlpatterns = [
     path('accounts/google_login', views.google_login, name='google_login'),
     path('accounts/login', auth_views.LoginView.as_view(template_name="login.html", 
                                 extra_context=extra_context), name='login'),
-    # path('accounts/login', views.login, name='login'),
     path('accounts/logout', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
     path('index', views.index, name='index'),
     path('accounts/password-reset', views.password_reset_request, name='password_reset_request'),
@@ -33,5 +32,6 @@ urlpatterns = [
     path('shop/products/list', views.shop_list, name='shop_list'),
     path('shop/products/add_to_cart', views.add_to_cart, name='add_to_cart'),
     path('shop/basket/<int:order_id>', views.check_basket, name='check_basket'),
+    path('shop/checkout/confirm', views.confirm_checkout, name='confirm_checkout'),
     path('shop/checkout/<int:order_id>', views.checkout, name='checkout'),
 ]

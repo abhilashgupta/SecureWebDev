@@ -1,7 +1,6 @@
 {% block content %}
 <div>
     <p><a href="{% url 'index' %}">Home</a></p>
-    <p id="msg"></p>
 </div>
 
 <div id="products_list">
@@ -78,14 +77,6 @@
                 else{
                     window.location.href = '../../index'
                 }
-                // console.log(response)
-                // signOut()
-                // if (response.status == 200){
-                //     window.location.href = '../index'
-                // }
-                // else{
-                //     window.location.href = 'registration'
-                // }
             })
         // window.current_product = null;
         // document.getElementById("products_list").style.display ="block";

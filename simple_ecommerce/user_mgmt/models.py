@@ -79,7 +79,7 @@ class Address(models.Model):
     user = models.CharField(max_length=150) #username(email in our case) of user
     street = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
-    zip_code = models.IntegerField()
+    zip_code = models.CharField(max_length=10)
     country = models.CharField(max_length=100)
     additional_info = models.TextField()
 
